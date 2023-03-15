@@ -3,11 +3,12 @@ package gnext
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/go-playground/validator/v10"
 	"log"
 	"net/http"
 	"os"
 	"reflect"
+
+	"github.com/go-playground/validator/v10"
 )
 
 var resetColor = "\033[0m"
@@ -105,7 +106,11 @@ func (c *errorHandlerCaller) addSetter(setter argSetter) {
 }
 
 func (c *errorHandlerCaller) call(ctx *callContext) {
-	results := c.handler.Call([]reflect.Value{ctx.error.Elem()})
+	if ctx.error.Kind() == reflect.Slice {
+		// Assume that the slice contains a single element, which is a pointer to the actual value.
+		*ctx.error = ctx.error.Index(0)
+	}
+	results := c.handler.Call([]reflect.Value{*ctx.error})
 	ctx.status = c.defaultStatus
 
 	for i, setter := range c.argSetters {
